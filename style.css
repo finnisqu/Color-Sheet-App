@@ -1,0 +1,92 @@
+/* Scoped Color Sheet App Styles */
+#color-sheet-app {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+/* Left + Right Panel Containers */
+#color-sheet-app .left-panel,
+#color-sheet-app .right-panel {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 20px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* Titles */
+#color-sheet-app h2 {
+  margin-top: 0;
+  font-size: 20px;
+  font-weight: bold;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+/* Dropdowns */
+#color-sheet-app select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+/* Buttons */
+#color-sheet-app button {
+  padding: 8px 14px;
+  margin: 5px;
+  border: none;
+  border-radius: 6px;
+  background: #0073e6;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#color-sheet-app button:hover {
+  background: #005bb5;
+}
+
+/* Groups */
+#color-sheet-app .group-box {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 12px 0;
+  background: #fafafa;
+}
+
+#color-sheet-app .group-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+/* Product Preview in PDF Panel */
+#color-sheet-app .pdf-preview {
+  border: 1px dashed #aaa;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fefefe;
+  min-height: 400px;
+}
+
+#color-sheet-app .pdf-item {
+  display: inline-block;
+  width: 100px;
+  margin: 6px;
+  text-align: center;
+}
+
+#color-sheet-app .pdf-item img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
