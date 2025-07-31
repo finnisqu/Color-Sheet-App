@@ -1,15 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Color Sheet App</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <!-- This is the container your JS will target -->
-  <div id="color-sheet-app"></div>
+<div id="color-sheet-app">
+  <h1>Color Sheet</h1>
 
-  <!-- Load your script -->
-  <script src="app.js"></script>
-</body>
-</html>
+  <!-- Controls -->
+  <div class="controls">
+    <label for="categoryDropdown">Filter by Category:</label>
+    <select id="categoryDropdown">
+      <option value="">Loading categories...</option>
+    </select>
+
+    <button id="addGroupBtn">+ Add Group</button>
+    <button id="exportPdfBtn">📄 Export PDF</button>
+    <button id="exportCsvBtn">📊 Export CSV</button>
+  </div>
+
+  <!-- Product Grid -->
+  <div id="productList" class="product-grid"></div>
+
+  <!-- Groups go here -->
+  <div id="groupsContainer"></div>
+</div>
