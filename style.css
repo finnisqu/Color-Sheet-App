@@ -1,92 +1,99 @@
-/* Scoped Color Sheet App Styles */
-#color-sheet-app {
+/* ====== Scoped to #colorSheetApp only ====== */
+#colorSheetApp {
   display: flex;
   gap: 20px;
   padding: 20px;
   font-family: Arial, sans-serif;
 }
 
-/* Left + Right Panel Containers */
-#color-sheet-app .left-panel,
-#color-sheet-app .right-panel {
+/* Left side (controls) */
+#leftPane {
   flex: 1;
-  border: 1px solid #ddd;
-  border-radius: 12px;
+  background: #f9f9f9;
   padding: 20px;
-  background: #ffffff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-/* Titles */
-#color-sheet-app h2 {
-  margin-top: 0;
+/* Right side (preview) */
+#rightPane {
+  flex: 2;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Section titles */
+#colorSheetApp h2 {
+  margin-bottom: 10px;
   font-size: 20px;
-  font-weight: bold;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 8px;
+  font-weight: 600;
+  color: #333;
 }
 
 /* Dropdowns */
-#color-sheet-app select {
+#colorSheetApp select {
   width: 100%;
-  padding: 8px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 8px 0;
   border: 1px solid #ccc;
-  margin: 5px 0;
+  border-radius: 8px;
+  background-color: #fff;
   font-size: 14px;
 }
 
 /* Buttons */
-#color-sheet-app button {
-  padding: 8px 14px;
-  margin: 5px;
-  border: none;
-  border-radius: 6px;
-  background: #0073e6;
+#colorSheetApp button {
+  background-color: #005bbb;
   color: #fff;
+  padding: 8px 16px;
+  margin: 8px 4px 8px 0;
+  border: none;
+  border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
-#color-sheet-app button:hover {
-  background: #005bb5;
+#colorSheetApp button:hover {
+  background-color: #004799;
 }
 
-/* Groups */
-#color-sheet-app .group-box {
+/* Group boxes */
+.group-box {
+  background: #fff;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 15px;
-  margin: 12px 0;
-  background: #fafafa;
+  margin: 15px 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-#color-sheet-app .group-title {
-  font-weight: bold;
-  margin-bottom: 8px;
+.group-box h3 {
+  margin-top: 0;
+  font-size: 16px;
+  color: #222;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
 }
 
-/* Product Preview in PDF Panel */
-#color-sheet-app .pdf-preview {
-  border: 1px dashed #aaa;
-  padding: 10px;
-  border-radius: 8px;
-  background: #fefefe;
-  min-height: 400px;
+/* Items inside group */
+.item-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
-#color-sheet-app .pdf-item {
-  display: inline-block;
-  width: 100px;
-  margin: 6px;
-  text-align: center;
+.item-row select {
+  flex: 1;
+  margin-right: 10px;
 }
 
-#color-sheet-app .pdf-item img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+/* PDF/CSV export buttons */
+.export-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
 }
