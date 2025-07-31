@@ -1,3 +1,12 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const categoryDropdown = document.getElementById("categoryDropdown");
+  const groupsContainer = document.getElementById("groupsContainer");
+
+  if (!categoryDropdown || !groupsContainer) {
+    console.error("App containers not found. Make sure the HTML block is on the page.");
+    return;
+  }
+
 // app.js
 
 const proxyUrl = "https://incandescent-begonia-01e3e1.netlify.app/.netlify/functions/squarespace-proxy";
@@ -113,7 +122,28 @@ function populateProductOptions(select, category, searchQuery) {
       opt.textContent = p.title;
       select.appendChild(opt);
     });
-}
+}  console.log("Color Sheet app initialized.");
+
+  // Example fetch
+  fetch("https://incandescent-begonia-01e3e1.netlify.app/.netlify/functions/squarespace-proxy")
+    .then(res => res.json())
+    .then(data => {
+      console.log("Fetched products:", data);
+
+      // Fill dropdown categories
+      const categories = [...new Set(data.map(p => p.category))];
+      categories.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        categoryDropdown.appendChild(option);
+      });
+    })
+    .catch(err => console.error("Error fetching products:", err));
+});
+
+
+
 
 // Init
 fetchProducts();
