@@ -1,156 +1,119 @@
-// ===== CONFIG =====
-const PROXY_BASE = "https://incandescent-begonia-01e3e1.netlify.app/.netlify/functions/squarespace-proxy";
+// app.js
 
-// Define your categories and their Squarespace gallery page URLs
-const CATEGORIES = {
-  Granite: "https://www.worldstoneonline.com/granite-gallery",
-  Quartz: "https://www.worldstoneonline.com/quartz-gallery",
-  Marble: "https://www.worldstoneonline.com/marble-gallery"
-};
+const proxyUrl = "https://incandescent-begonia-01e3e1.netlify.app/.netlify/functions/squarespace-proxy";
 
-// ===== STATE =====
-let allProducts = {};
-let selectedCategory = null;
+// Store products globally
+let allProducts = [];
+let categories = [];
 
-// ===== UI HOOKS =====
+// Elements
 const categoryDropdown = document.getElementById("categoryDropdown");
 const groupsContainer = document.getElementById("groupsContainer");
 
-// ===== INIT =====
-document.addEventListener("DOMContentLoaded", () => {
-  // Populate Category dropdown
-  Object.keys(CATEGORIES).forEach(cat => {
+// Fetch products from Squarespace via proxy
+async function fetchProducts() {
+  try {
+    const response = await fetch(proxyUrl);
+    const data = await response.json();
+
+    // Assuming Squarespace API gives items under data.items
+    allProducts = data.items || [];
+
+    // Extract unique categories
+    categories = [...new Set(allProducts.map(p => p.categories?.[0]?.title).filter(Boolean))];
+
+    populateCategoryDropdown();
+  } catch (err) {
+    console.error("Error fetching products:", err);
+  }
+}
+
+// Fill category dropdown
+function populateCategoryDropdown() {
+  categoryDropdown.innerHTML = "<option value=''>Select a category</option>";
+
+  categories.forEach(cat => {
     const opt = document.createElement("option");
     opt.value = cat;
     opt.textContent = cat;
     categoryDropdown.appendChild(opt);
   });
+}
 
-  // Category change → load products
-  categoryDropdown.addEventListener("change", async (e) => {
-    selectedCategory = e.target.value;
-    await loadCategoryProducts(selectedCategory);
-    renderGroups();
-  });
-
-  // Add Group button
-  document.getElementById("addGroupBtn").addEventListener("click", () => {
-    if (!selectedCategory) return alert("Select a category first!");
-    addGroup();
-  });
-
-  // Export buttons
-  document.getElementById("exportPDFBtn").addEventListener("click", () => {
-    exportPDF();
-  });
-
-  document.getElementById("exportCSVBtn").addEventListener("click", () => {
-    exportCSV();
-  });
+// When category is chosen, refresh groups
+categoryDropdown.addEventListener("change", () => {
+  const selectedCategory = categoryDropdown.value;
+  groupsContainer.innerHTML = ""; // Reset
+  if (selectedCategory) {
+    addGroup(); // Add first group by default
+  }
 });
 
-// ===== LOAD PRODUCTS =====
-async function loadCategoryProducts(category) {
-  if (allProducts[category]) return; // already loaded
-
-  try {
-    const res = await fetch(
-      `${PROXY_BASE}?url=${encodeURIComponent(CATEGORIES[category])}&category=${category}`
-    );
-    const data = await res.json();
-    allProducts[category] = data.products || [];
-    console.log("Loaded products for", category, allProducts[category]);
-  } catch (err) {
-    console.error("Failed to load products", err);
-  }
-}
-
-// ===== GROUPS & ITEMS =====
-let groups = [];
-
+// Add a new group box
 function addGroup() {
-  const groupId = groups.length + 1;
-  groups.push({ id: groupId, items: [] });
-  renderGroups();
+  const groupDiv = document.createElement("div");
+  groupDiv.className = "group-box";
+
+  const title = document.createElement("h3");
+  title.textContent = `Group ${groupsContainer.children.length + 1}`;
+
+  const productSelect = createProductDropdown(categoryDropdown.value);
+
+  const addItemBtn = document.createElement("button");
+  addItemBtn.textContent = "+ Add Item";
+  addItemBtn.onclick = () => {
+    const newSelect = createProductDropdown(categoryDropdown.value);
+    groupDiv.appendChild(newSelect);
+  };
+
+  groupDiv.appendChild(title);
+  groupDiv.appendChild(productSelect);
+  groupDiv.appendChild(addItemBtn);
+
+  groupsContainer.appendChild(groupDiv);
 }
 
-function addItem(groupId) {
-  const group = groups.find(g => g.id === groupId);
-  if (!group) return;
+// Create searchable product dropdown
+function createProductDropdown(category) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "dropdown-wrapper";
 
-  group.items.push({ product: null });
-  renderGroups();
-}
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Search product...";
+  input.className = "search-box";
 
-function renderGroups() {
-  groupsContainer.innerHTML = "";
+  const select = document.createElement("select");
+  select.className = "product-dropdown";
 
-  groups.forEach(group => {
-    const groupBox = document.createElement("div");
-    groupBox.className = "group-box";
+  populateProductOptions(select, category, "");
 
-    const title = document.createElement("h3");
-    title.textContent = `Group ${group.id}`;
-    groupBox.appendChild(title);
-
-    const addItemBtn = document.createElement("button");
-    addItemBtn.textContent = "Add Item";
-    addItemBtn.onclick = () => addItem(group.id);
-    groupBox.appendChild(addItemBtn);
-
-    // Render items
-    group.items.forEach((item, idx) => {
-      const itemDiv = document.createElement("div");
-      itemDiv.className = "item-row";
-
-      const select = document.createElement("select");
-      select.className = "product-select";
-      select.innerHTML = `<option value="">Select product</option>`;
-
-      if (selectedCategory && allProducts[selectedCategory]) {
-        allProducts[selectedCategory].forEach(prod => {
-          const opt = document.createElement("option");
-          opt.value = prod.name;
-          opt.textContent = prod.name;
-          if (item.product === prod.name) opt.selected = true;
-          select.appendChild(opt);
-        });
-      }
-
-      select.addEventListener("change", (e) => {
-        item.product = e.target.value;
-      });
-
-      itemDiv.appendChild(select);
-      groupBox.appendChild(itemDiv);
-    });
-
-    groupsContainer.appendChild(groupBox);
-  });
-}
-
-// ===== EXPORT PDF (placeholder) =====
-function exportPDF() {
-  alert("PDF export coming soon!");
-}
-
-// ===== EXPORT CSV =====
-function exportCSV() {
-  if (!selectedCategory) return alert("Select a category first!");
-  let rows = [["Category", "Group", "Product"]];
-
-  groups.forEach(group => {
-    group.items.forEach(item => {
-      rows.push([selectedCategory, `Group ${group.id}`, item.product || ""]);
-    });
+  // Filter options based on search
+  input.addEventListener("input", () => {
+    populateProductOptions(select, category, input.value);
   });
 
-  const csvContent = rows.map(r => r.join(",")).join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
+  wrapper.appendChild(input);
+  wrapper.appendChild(select);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${selectedCategory}_ColorSheet.csv`;
-  a.click();
+  return wrapper;
 }
+
+// Fill product dropdown with products from selected category
+function populateProductOptions(select, category, searchQuery) {
+  select.innerHTML = "<option value=''>Select product</option>";
+
+  const products = allProducts.filter(p => p.categories?.[0]?.title === category);
+
+  products
+    .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.title;
+      select.appendChild(opt);
+    });
+}
+
+// Init
+fetchProducts();
