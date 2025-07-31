@@ -1,149 +1,125 @@
+// app.js
+
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ Color Sheet App loading...");
+
+  // Grab references to the UI elements
   const categoryDropdown = document.getElementById("categoryDropdown");
   const groupsContainer = document.getElementById("groupsContainer");
+  const addGroupBtn = document.getElementById("addGroupBtn");
+  const exportPdfBtn = document.getElementById("exportPdfBtn");
+  const exportCsvBtn = document.getElementById("exportCsvBtn");
 
+  // If we can't find the app container, stop here
   if (!categoryDropdown || !groupsContainer) {
-    console.error("App containers not found. Make sure the HTML block is on the page.");
+    console.error("❌ App containers not found. Check your HTML block.");
     return;
   }
 
-// app.js
+  // State
+  let products = [];
+  let groups = [];
 
-const proxyUrl = "https://incandescent-begonia-01e3e1.netlify.app/.netlify/functions/squarespace-proxy";
+  // Fetch products from proxy
+  async function fetchProducts() {
+    try {
+      const response = await fetch("https://incandescent-begonia-01e3e1.netlify.app/.netlify/functions/squarespace-proxy");
+      const data = await response.json();
+      console.log("✅ Fetched products:", data);
 
-// Store products globally
-let allProducts = [];
-let categories = [];
+      products = data;
 
-// Elements
-const categoryDropdown = document.getElementById("categoryDropdown");
-const groupsContainer = document.getElementById("groupsContainer");
+      // Build unique category list
+      const categories = [...new Set(products.map(p => p.category))];
+      console.log("✅ Categories:", categories);
 
-// Fetch products from Squarespace via proxy
-async function fetchProducts() {
-  try {
-    const response = await fetch(proxyUrl);
-    const data = await response.json();
-
-    // Assuming Squarespace API gives items under data.items
-    allProducts = data.items || [];
-
-    // Extract unique categories
-    categories = [...new Set(allProducts.map(p => p.categories?.[0]?.title).filter(Boolean))];
-
-    populateCategoryDropdown();
-  } catch (err) {
-    console.error("Error fetching products:", err);
-  }
-}
-
-// Fill category dropdown
-function populateCategoryDropdown() {
-  categoryDropdown.innerHTML = "<option value=''>Select a category</option>";
-
-  categories.forEach(cat => {
-    const opt = document.createElement("option");
-    opt.value = cat;
-    opt.textContent = cat;
-    categoryDropdown.appendChild(opt);
-  });
-}
-
-// When category is chosen, refresh groups
-categoryDropdown.addEventListener("change", () => {
-  const selectedCategory = categoryDropdown.value;
-  groupsContainer.innerHTML = ""; // Reset
-  if (selectedCategory) {
-    addGroup(); // Add first group by default
-  }
-});
-
-// Add a new group box
-function addGroup() {
-  const groupDiv = document.createElement("div");
-  groupDiv.className = "group-box";
-
-  const title = document.createElement("h3");
-  title.textContent = `Group ${groupsContainer.children.length + 1}`;
-
-  const productSelect = createProductDropdown(categoryDropdown.value);
-
-  const addItemBtn = document.createElement("button");
-  addItemBtn.textContent = "+ Add Item";
-  addItemBtn.onclick = () => {
-    const newSelect = createProductDropdown(categoryDropdown.value);
-    groupDiv.appendChild(newSelect);
-  };
-
-  groupDiv.appendChild(title);
-  groupDiv.appendChild(productSelect);
-  groupDiv.appendChild(addItemBtn);
-
-  groupsContainer.appendChild(groupDiv);
-}
-
-// Create searchable product dropdown
-function createProductDropdown(category) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "dropdown-wrapper";
-
-  const input = document.createElement("input");
-  input.type = "text";
-  input.placeholder = "Search product...";
-  input.className = "search-box";
-
-  const select = document.createElement("select");
-  select.className = "product-dropdown";
-
-  populateProductOptions(select, category, "");
-
-  // Filter options based on search
-  input.addEventListener("input", () => {
-    populateProductOptions(select, category, input.value);
-  });
-
-  wrapper.appendChild(input);
-  wrapper.appendChild(select);
-
-  return wrapper;
-}
-
-// Fill product dropdown with products from selected category
-function populateProductOptions(select, category, searchQuery) {
-  select.innerHTML = "<option value=''>Select product</option>";
-
-  const products = allProducts.filter(p => p.categories?.[0]?.title === category);
-
-  products
-    .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    .forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p.id;
-      opt.textContent = p.title;
-      select.appendChild(opt);
-    });
-}  console.log("Color Sheet app initialized.");
-
-  // Example fetch
-  fetch("https://incandescent-begonia-01e3e1.netlify.app/.netlify/functions/squarespace-proxy")
-    .then(res => res.json())
-    .then(data => {
-      console.log("Fetched products:", data);
-
-      // Fill dropdown categories
-      const categories = [...new Set(data.map(p => p.category))];
+      // Populate dropdown
+      categoryDropdown.innerHTML = `<option value="">Select a category</option>`;
       categories.forEach(cat => {
         const option = document.createElement("option");
         option.value = cat;
         option.textContent = cat;
         categoryDropdown.appendChild(option);
       });
-    })
-    .catch(err => console.error("Error fetching products:", err));
+    } catch (error) {
+      console.error("❌ Error fetching products:", error);
+    }
+  }
+
+  // Handle category change
+  categoryDropdown.addEventListener("change", (e) => {
+    const selectedCategory = e.target.value;
+    console.log("📂 Selected category:", selectedCategory);
+
+    if (!selectedCategory) return;
+
+    // Reset groups
+    groups = [];
+    groupsContainer.innerHTML = "";
+
+    // Add the first group automatically
+    addGroup();
+  });
+
+  // Add a group
+  function addGroup() {
+    const groupIndex = groups.length + 1;
+    const groupBox = document.createElement("div");
+    groupBox.className = "group-box";
+    groupBox.innerHTML = `
+      <h3>Group ${groupIndex}</h3>
+      <div class="items"></div>
+      <button class="addItemBtn">+ Add Item</button>
+    `;
+
+    const addItemBtn = groupBox.querySelector(".addItemBtn");
+    const itemsContainer = groupBox.querySelector(".items");
+
+    addItemBtn.addEventListener("click", () => addItem(itemsContainer));
+
+    groupsContainer.appendChild(groupBox);
+    groups.push({ groupIndex, items: [] });
+  }
+
+  // Add an item to a group
+  function addItem(container) {
+    const selectedCategory = categoryDropdown.value;
+    const filteredProducts = products.filter(p => p.category === selectedCategory);
+
+    const itemBox = document.createElement("div");
+    itemBox.className = "item-box";
+
+    const productSelect = document.createElement("select");
+    productSelect.className = "product-dropdown";
+
+    // Add search option (basic browser search in dropdown)
+    productSelect.innerHTML = `<option value="">Select a product</option>`;
+    filteredProducts.forEach(prod => {
+      const opt = document.createElement("option");
+      opt.value = prod.id;
+      opt.textContent = prod.title;
+      productSelect.appendChild(opt);
+    });
+
+    itemBox.appendChild(productSelect);
+    container.appendChild(itemBox);
+  }
+
+  // Export to PDF
+  exportPdfBtn?.addEventListener("click", () => {
+    console.log("📄 Export PDF clicked.");
+    alert("PDF export coming soon!");
+  });
+
+  // Export to CSV
+  exportCsvBtn?.addEventListener("click", () => {
+    console.log("📊 Export CSV clicked.");
+    alert("CSV export coming soon!");
+  });
+
+  // Add group button
+  addGroupBtn?.addEventListener("click", addGroup);
+
+  // Start app
+  fetchProducts();
 });
-
-
-
-
-// Init
-fetchProducts();
