@@ -1,216 +1,156 @@
-document.addEventListener("DOMContentLoaded", function () {
-  const appContainer = document.querySelector("#color-sheet-app");
-  if (!appContainer) {
-    return; // Exit if not on the Color Sheet page
-  }
+// ===== CONFIG =====
+const PROXY_BASE = "https://incandescent-begonia-01e3e1.netlify.app/.netlify/functions/squarespace-proxy";
 
-  // ===== STATE =====
-  let products = [];
-  let categories = [];
-  let selectedCategory = null;
-  let groups = [{ id: 1, items: [] }];
+// Define your categories and their Squarespace gallery page URLs
+const CATEGORIES = {
+  Granite: "https://www.worldstoneonline.com/granite-gallery",
+  Quartz: "https://www.worldstoneonline.com/quartz-gallery",
+  Marble: "https://www.worldstoneonline.com/marble-gallery"
+};
 
-  // ===== HELPERS =====
-  function createEl(tag, className, text) {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (text) el.innerText = text;
-    return el;
-  }
+// ===== STATE =====
+let allProducts = {};
+let selectedCategory = null;
 
-  function fetchProducts() {
-    // Example endpoint: adjust to your proxy
-    return fetch("https://your-proxy-url.com/products")
-      .then(res => res.json())
-      .then(data => {
-        products = data;
-        categories = [...new Set(products.map(p => p.category))];
-        populateCategoryDropdown();
-      })
-      .catch(err => console.error("Error fetching products:", err));
-  }
+// ===== UI HOOKS =====
+const categoryDropdown = document.getElementById("categoryDropdown");
+const groupsContainer = document.getElementById("groupsContainer");
 
-  function populateCategoryDropdown() {
-    categoryDropdown.innerHTML = "";
-    const defaultOpt = createEl("option", "", "-- Select Category --");
-    defaultOpt.disabled = true;
-    defaultOpt.selected = true;
-    categoryDropdown.appendChild(defaultOpt);
+// ===== INIT =====
+document.addEventListener("DOMContentLoaded", () => {
+  // Populate Category dropdown
+  Object.keys(CATEGORIES).forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
+    categoryDropdown.appendChild(opt);
+  });
 
-    categories.forEach(cat => {
-      const opt = createEl("option", "", cat);
-      opt.value = cat;
-      categoryDropdown.appendChild(opt);
-    });
-  }
-
-  function populateProductDropdown(dropdown, category) {
-    dropdown.innerHTML = "";
-    const catProducts = products.filter(p => p.category === category);
-
-    const defaultOpt = createEl("option", "", "-- Select Product --");
-    defaultOpt.disabled = true;
-    defaultOpt.selected = true;
-    dropdown.appendChild(defaultOpt);
-
-    catProducts.forEach(p => {
-      const opt = createEl("option", "", p.name);
-      opt.value = p.id;
-      dropdown.appendChild(opt);
-    });
-  }
-
-  // ===== UI BUILD =====
-  const header = createEl("div", "header");
-  const title = createEl("h1", "title", "Color Sheet");
-
-  const exportButtons = createEl("div", "export-buttons");
-  const pdfBtn = createEl("button", "export-btn", "Export PDF");
-  const csvBtn = createEl("button", "export-btn", "Export CSV");
-  exportButtons.appendChild(pdfBtn);
-  exportButtons.appendChild(csvBtn);
-
-  header.appendChild(title);
-  header.appendChild(exportButtons);
-
-  const categoryContainer = createEl("div", "category-container");
-  const categoryDropdown = createEl("select", "dropdown");
-  categoryContainer.appendChild(categoryDropdown);
-
-  const groupsContainer = createEl("div", "groups-container");
-  const addGroupBtn = createEl("button", "add-group-btn", "Add Group");
-
-  const previewContainer = createEl("div", "preview-container");
-  previewContainer.innerHTML = "<h2>PDF Preview</h2>";
-
-  appContainer.appendChild(header);
-  appContainer.appendChild(categoryContainer);
-
-  const layout = createEl("div", "layout");
-  const leftBox = createEl("div", "left-box");
-  const rightBox = createEl("div", "right-box");
-
-  leftBox.appendChild(groupsContainer);
-  leftBox.appendChild(addGroupBtn);
-  rightBox.appendChild(previewContainer);
-
-  layout.appendChild(leftBox);
-  layout.appendChild(rightBox);
-  appContainer.appendChild(layout);
-
-  // ===== EVENT HANDLERS =====
-  categoryDropdown.addEventListener("change", () => {
-    selectedCategory = categoryDropdown.value;
-    groups = [{ id: 1, items: [] }];
+  // Category change → load products
+  categoryDropdown.addEventListener("change", async (e) => {
+    selectedCategory = e.target.value;
+    await loadCategoryProducts(selectedCategory);
     renderGroups();
   });
 
-  addGroupBtn.addEventListener("click", () => {
-    const newId = groups.length + 1;
-    groups.push({ id: newId, items: [] });
-    renderGroups();
+  // Add Group button
+  document.getElementById("addGroupBtn").addEventListener("click", () => {
+    if (!selectedCategory) return alert("Select a category first!");
+    addGroup();
   });
 
-  pdfBtn.addEventListener("click", () => {
-    alert("PDF export coming soon...");
+  // Export buttons
+  document.getElementById("exportPDFBtn").addEventListener("click", () => {
+    exportPDF();
   });
 
-  csvBtn.addEventListener("click", () => {
+  document.getElementById("exportCSVBtn").addEventListener("click", () => {
     exportCSV();
   });
-
-  // ===== RENDER FUNCTIONS =====
-  function renderGroups() {
-    groupsContainer.innerHTML = "";
-    groups.forEach(group => {
-      const groupBox = createEl("div", "group-box");
-      const groupTitle = createEl("h3", "", "Group " + group.id);
-
-      const itemsContainer = createEl("div", "items-container");
-
-      group.items.forEach((item, idx) => {
-        const itemRow = createEl("div", "item-row");
-
-        const dropdown = createEl("select", "dropdown");
-        populateProductDropdown(dropdown, selectedCategory);
-        dropdown.value = item.id;
-
-        dropdown.addEventListener("change", () => {
-          group.items[idx] = { id: dropdown.value };
-          updatePreview();
-        });
-
-        itemRow.appendChild(dropdown);
-        itemsContainer.appendChild(itemRow);
-      });
-
-      const addItemBtn = createEl("button", "add-item-btn", "Add Item");
-      addItemBtn.addEventListener("click", () => {
-        group.items.push({ id: null });
-        renderGroups();
-      });
-
-      groupBox.appendChild(groupTitle);
-      groupBox.appendChild(itemsContainer);
-      groupBox.appendChild(addItemBtn);
-      groupsContainer.appendChild(groupBox);
-    });
-
-    updatePreview();
-  }
-
-  function updatePreview() {
-    previewContainer.innerHTML = "<h2>PDF Preview</h2>";
-    const timestamp = new Date().toLocaleString();
-    const timeEl = createEl("div", "timestamp", timestamp);
-    previewContainer.appendChild(timeEl);
-
-    groups.forEach(group => {
-      const groupEl = createEl("div", "preview-group");
-      const gTitle = createEl("h3", "", "Group " + group.id);
-      groupEl.appendChild(gTitle);
-
-      const row = createEl("div", "preview-row");
-      group.items.forEach(item => {
-        const product = products.find(p => p.id === item.id);
-        if (product) {
-          const card = createEl("div", "preview-card");
-          const img = createEl("img");
-          img.src = product.image;
-          img.alt = product.name;
-          const caption = createEl("div", "caption", product.name);
-          card.appendChild(img);
-          card.appendChild(caption);
-          row.appendChild(card);
-        }
-      });
-      groupEl.appendChild(row);
-      previewContainer.appendChild(groupEl);
-    });
-  }
-
-  function exportCSV() {
-    let rows = [["Category", "Group", "Product"]];
-    groups.forEach(group => {
-      group.items.forEach(item => {
-        const product = products.find(p => p.id === item.id);
-        if (product) {
-          rows.push([selectedCategory, group.id, product.name]);
-        }
-      });
-    });
-
-    let csvContent =
-      "data:text/csv;charset=utf-8," +
-      rows.map(r => r.join(",")).join("\n");
-    const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", "color-sheet.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  // ===== INIT =====
-  fetchProducts();
 });
+
+// ===== LOAD PRODUCTS =====
+async function loadCategoryProducts(category) {
+  if (allProducts[category]) return; // already loaded
+
+  try {
+    const res = await fetch(
+      `${PROXY_BASE}?url=${encodeURIComponent(CATEGORIES[category])}&category=${category}`
+    );
+    const data = await res.json();
+    allProducts[category] = data.products || [];
+    console.log("Loaded products for", category, allProducts[category]);
+  } catch (err) {
+    console.error("Failed to load products", err);
+  }
+}
+
+// ===== GROUPS & ITEMS =====
+let groups = [];
+
+function addGroup() {
+  const groupId = groups.length + 1;
+  groups.push({ id: groupId, items: [] });
+  renderGroups();
+}
+
+function addItem(groupId) {
+  const group = groups.find(g => g.id === groupId);
+  if (!group) return;
+
+  group.items.push({ product: null });
+  renderGroups();
+}
+
+function renderGroups() {
+  groupsContainer.innerHTML = "";
+
+  groups.forEach(group => {
+    const groupBox = document.createElement("div");
+    groupBox.className = "group-box";
+
+    const title = document.createElement("h3");
+    title.textContent = `Group ${group.id}`;
+    groupBox.appendChild(title);
+
+    const addItemBtn = document.createElement("button");
+    addItemBtn.textContent = "Add Item";
+    addItemBtn.onclick = () => addItem(group.id);
+    groupBox.appendChild(addItemBtn);
+
+    // Render items
+    group.items.forEach((item, idx) => {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "item-row";
+
+      const select = document.createElement("select");
+      select.className = "product-select";
+      select.innerHTML = `<option value="">Select product</option>`;
+
+      if (selectedCategory && allProducts[selectedCategory]) {
+        allProducts[selectedCategory].forEach(prod => {
+          const opt = document.createElement("option");
+          opt.value = prod.name;
+          opt.textContent = prod.name;
+          if (item.product === prod.name) opt.selected = true;
+          select.appendChild(opt);
+        });
+      }
+
+      select.addEventListener("change", (e) => {
+        item.product = e.target.value;
+      });
+
+      itemDiv.appendChild(select);
+      groupBox.appendChild(itemDiv);
+    });
+
+    groupsContainer.appendChild(groupBox);
+  });
+}
+
+// ===== EXPORT PDF (placeholder) =====
+function exportPDF() {
+  alert("PDF export coming soon!");
+}
+
+// ===== EXPORT CSV =====
+function exportCSV() {
+  if (!selectedCategory) return alert("Select a category first!");
+  let rows = [["Category", "Group", "Product"]];
+
+  groups.forEach(group => {
+    group.items.forEach(item => {
+      rows.push([selectedCategory, `Group ${group.id}`, item.product || ""]);
+    });
+  });
+
+  const csvContent = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${selectedCategory}_ColorSheet.csv`;
+  a.click();
+}
